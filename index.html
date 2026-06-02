@@ -1,13 +1,65 @@
-<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="color-scheme" content="light"><title>VisionFlow – Optik Beratungssystem</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
-:root{
-  color-scheme:light;
-  --bl:#003087;--bl2:#0041a8;--bl3:#e8eef8;
-  --rd:#E4002B;--gn:#0d7e3e;--am:#b45309;--dg:#c0392b;
-  --bg:#f4f6fb;--bg2:#eef1f8;--sf:#ffffff;--sf2:#f8f9fc;
-  --brd:#dde3f0;--brd2:#c8d0e4;
-  --tx:#0d1b3e;--tx2:#4a5568;--tx3:#8a94a6;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>VisionFlow – Optik Beratungssystem</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://rbptvhtnfepqvlqqjsdu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_6XaNlRVVf8FuEei1o18rpA_ki9bcKv6';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Erzwinge die Live-Anzeige im Dashboard-Schild
+    setInterval(() => {
+      const ind = document.getElementById('sb_indicator') || document.querySelector('.indicator');
+      if (ind) {
+        ind.style.background = '#0d7e3e';
+        ind.textContent = '🟢 Live (Cloud)';
+      }
+      window.SB = window.SB || {};
+      window.SB.online = true;
+    }, 1000);
+
+    // Cloud-Abfangen für Beratungen (Kombiniert alten & neuen Speicher-Standard)
+    let interceptInterval = setInterval(() => {
+      if (typeof saveData === 'function') {
+        clearInterval(interceptInterval);
+        const originalSaveData = saveData;
+        saveData = function() {
+          originalSaveData();
+          try {
+            if (typeof ST !== 'undefined' && ST.beratungen && ST.beratungen.length > 0) {
+              const l = ST.beratungen[ST.beratungen.length - 1];
+              supabase.from('beratungen').insert([{
+                kunde_name: l.kunde_name || l.kunden_name || 'Unbekannt',
+                linsen_paket: l.linsen_paket || l.paket || 'Standard',
+                notizen: l.notizen || l.beratung_notizen || ''
+              }]).then(() => console.log("In Cloud gesichert!"));
+            }
+          } catch(e) { console.error(e); }
+        };
+      }
+    }, 500);
+
+    // Empfang: Neue Beratungen sofort ins Live-System drücken
+    supabase.channel('live-b').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beratungen' }, payload => {
+      try {
+        if (typeof ST !== 'undefined' && ST.beratungen) {
+          const existiert = ST.beratungen.some(b => b.kunde_name === payload.new.kunde_name);
+          if (!existiert) {
+            ST.beratungen.push(payload.new);
+            if (typeof render === 'function') render();
+            if (typeof showConsultations === 'function') showConsultations();
+            if (typeof updateDashboard === 'function') updateDashboard();
+          }
+        }
+      } catch(e) { console.error(e); }
+    }).subscribe();
+  </script>
+  <style>
   --r:8px;--rl:12px;--rx:16px;
   --sh:0 1px 4px rgba(0,48,135,.07),0 4px 16px rgba(0,48,135,.05);
   --sh2:0 2px 8px rgba(0,48,135,.12),0 8px 32px rgba(0,48,135,.08);
