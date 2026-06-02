@@ -1,81 +1,13 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <meta name="color-scheme" content="light">
-  <title>VisionFlow – Optik Beratungssystem</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = 'https://rbptvhtnfepqvlqqjsdu.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_6XaNlRVVf8FuEei1o18rpA_ki9bcKv6';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Zwingt das System global in den Online-Modus
-    window.SB = window.SB || {};
-    window.SB.online = true;
-
-    // Prüft ununterbrochen, ob das Schild geladen wurde und färbt es ein
-    setInterval(() => {
-      const ind = document.getElementById('sb_indicator') || document.querySelector('.indicator') || document.querySelector('.badge');
-      if (ind) {
-        ind.style.setProperty('background', '#0d7e3e', 'important');
-        ind.style.setProperty('color', '#ffffff', 'important');
-        ind.textContent = '🟢 Live (Cloud)';
-      }
-    }, 500);
-  </script>
-    // Erzwinge die Live-Anzeige unzerstörbar
-setInterval(() => {
-  window.SB = window.SB || {};
-  window.SB.online = true;
-  
-  // Sucht das orangefarbene "?? Lokal"-Schild und färbt es grün
-  const ind = document.getElementById('sb_indicator') || document.querySelector('.indicator') || document.querySelector('.badge');
-  if (ind) {
-    ind.style.setProperty('background', '#0d7e3e', 'important');
-    ind.style.setProperty('color', '#ffffff', 'important');
-    ind.textContent = '🟢 Live (Cloud)';
-  }
-}, 500);
-    // Cloud-Abfangen für Beratungen (Kombiniert alten & neuen Speicher-Standard)
-    let interceptInterval = setInterval(() => {
-      if (typeof saveData === 'function') {
-        clearInterval(interceptInterval);
-        const originalSaveData = saveData;
-        saveData = function() {
-          originalSaveData();
-          try {
-            if (typeof ST !== 'undefined' && ST.beratungen && ST.beratungen.length > 0) {
-              const l = ST.beratungen[ST.beratungen.length - 1];
-              supabase.from('beratungen').insert([{
-                kunde_name: l.kunde_name || l.kunden_name || 'Unbekannt',
-                linsen_paket: l.linsen_paket || l.paket || 'Standard',
-                notizen: l.notizen || l.beratung_notizen || ''
-              }]).then(() => console.log("In Cloud gesichert!"));
-            }
-          } catch(e) { console.error(e); }
-        };
-      }
-    }, 500);
-
-    // Empfang: Neue Beratungen sofort ins Live-System drücken
-    supabase.channel('live-b').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beratungen' }, payload => {
-      try {
-        if (typeof ST !== 'undefined' && ST.beratungen) {
-          const existiert = ST.beratungen.some(b => b.kunde_name === payload.new.kunde_name);
-          if (!existiert) {
-            ST.beratungen.push(payload.new);
-            if (typeof render === 'function') render();
-            if (typeof showConsultations === 'function') showConsultations();
-            if (typeof updateDashboard === 'function') updateDashboard();
-          }
-        }
-      } catch(e) { console.error(e); }
-    }).subscribe();
-  </script>
-  <style>
+<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="color-scheme" content="light"><title>VisionFlow – Optik Beratungssystem</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  color-scheme:light;
+  --bl:#003087;--bl2:#0041a8;--bl3:#e8eef8;
+  --rd:#E4002B;--gn:#0d7e3e;--am:#b45309;--dg:#c0392b;
+  --bg:#f4f6fb;--bg2:#eef1f8;--sf:#ffffff;--sf2:#f8f9fc;
+  --brd:#dde3f0;--brd2:#c8d0e4;
+  --tx:#0d1b3e;--tx2:#4a5568;--tx3:#8a94a6;
   --r:8px;--rl:12px;--rx:16px;
   --sh:0 1px 4px rgba(0,48,135,.07),0 4px 16px rgba(0,48,135,.05);
   --sh2:0 2px 8px rgba(0,48,135,.12),0 8px 32px rgba(0,48,135,.08);
@@ -13397,19 +13329,7 @@ function pgMeta(){
         {e:'"Wie lange hält der Akku?"',a:'36 Stunden Standby, 4 Stunden aktive Nutzung. Case gibt 3 Ladungen dazu.'},
       ];
 
-      w.document.close();
-    w.print();
-  };
-};
-
-// Startet die App und lädt die Filialen beim Seitenaufruf
-window.addEventListener('DOMContentLoaded', () => {
-  if (typeof render === 'function') render();
-  if (typeof initApp === 'function') initApp();
-});
-</script>
-</body>
-</html>html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">';
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">';
       html+='<div>';
       html+='<div style="font-size:12px;font-weight:700;color:'+kt.col+';margin-bottom:10px;">'+kt.icon+' Kundentyp: '+kt.lbl+'</div>';
       tips.forEach(function(t,i){
@@ -13441,9 +13361,66 @@ window.addEventListener('DOMContentLoaded', () => {
         html+='<div class="mx-card" style="padding:10px;text-align:center;">';
         html+='<div style="font-size:20px;margin-bottom:4px;">'+u.icon+'</div>';
         html+='<div style="font-size:11px;font-weight:700;">'+u.t+'</div>';
-       window.mxRender = function(){ render(); };
-    render();
+        html+='<div style="font-size:12px;color:#4ade80;font-family:monospace;">'+u.p+'</div></div>';
+      });
+      html+='</div></div>';
+    }
+    html+='</div>';
+    return html;
   }
-</script>
-</body>
-</html>
+
+  // ─── Events ───────────────────────────────────────────────
+  function bindMxEvents(){}
+
+  window.mxGoTab=function(t){mxTab=t;render();};
+  window.mxAnswer=function(k,v){mxAnswers[k]=(v==='true'||v===true);render();};
+  window.mxActivateHud=function(i){
+    var el=document.getElementById('mx-hud-res-'+i);
+    if(!el)return;
+    el.style.color='#4f8eff';
+    el.textContent='⏳ Analyse …';
+    setTimeout(function(){
+      el.textContent=HUD_ITEMS[i].demo;
+      el.style.color='#4ade80';
+    },700+Math.random()*500);
+  };
+  window.mxSetTrans=function(v){mxTransInput=v;render();};
+  window.mxSetLang=function(l){mxTransLang=l;render();};
+  window.mxAddToAngebot=function(name,preis){
+    if(!window._mxAngebot)window._mxAngebot=[];
+    window._mxAngebot.push({name:name,preis:preis});
+    render();
+    toast('✅ '+name+' zum Angebot hinzugefügt');
+  };
+  window.mxRemoveAngebot=function(i){
+    if(window._mxAngebot)window._mxAngebot.splice(i,1);
+    render();
+  };
+  window.mxDruckAngebot=function(){
+    var a=window._mxAngebot||[];
+    if(!a.length)return;
+    var w=window.open('','_blank');
+    if(!w)return toast('Pop-up geblockt');
+    var total=a.reduce(function(s,x){return s+parseInt(x.preis);},0);
+    w.document.write('<!DOCTYPE html><html><head><title>VisionFlow – Optik Beratungssystem</title><style>body{font-family:Arial;padding:24px;}h1{color:#003087;}table{width:100%;border-collapse:collapse;}td,th{padding:8px 12px;border-bottom:1px solid #eee;}th{background:#003087;color:#fff;}</style></head><body>'
+      +'<h1>Angebot · Ray-Ban Meta Smart Glasses</h1>'
+      +'<p>'+new Date().toLocaleDateString('de-DE')+' · Apollo Optik</p>'
+      +'<table><thead><tr><th>Produkt</th><th>Preis</th></tr></thead><tbody>'
+      +a.map(function(x){return'<tr><td>'+x.name+'</td><td>'+x.preis+'€</td></tr>';}).join('')
+      +'<tr style="font-weight:700"><td>Gesamt</td><td>'+total+'€</td></tr>'
+      +'</tbody></table>'
+      +'<p style="margin-top:20px;font-size:11px;color:#999;">VisionFlow · Ray-Ban Meta Experience Center · Unverbindliches Angebot</p>'
+      +'</body></html>');
+    w.document.close();w.print();
+  };
+  window.mxRender=function(){render();};
+
+  render();
+}
+// ════════════════════════════════════════════════════════════════
+// MEHRSPRACHIGKEIT – Kunden-Interface
+// ════════════════════════════════════════════════════════════════
+// MEHRSPRACHIGKEIT – Kunden-Interface
+// ════════════════════════════════════════════════════════════════
+</script></div>
+</body></html>
