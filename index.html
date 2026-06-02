@@ -12595,12 +12595,20 @@ function pgPraesentation(){
   set('mc',html);
 }
 function updateSBIndicator(){
-  var ind=document.getElementById('sb-indicator');
-  if(!ind)return;
-  ind.style.display='inline-flex';
-  ind.style.background=SB.online?'#0d7e3e':'#b45309';
-  ind.textContent=SB.online?'☁️ Cloud':'?? Lokal';
-  ind.title=SB.online?'Supabase verbunden':'Offline-Modus';
+  var ind = document.getElementById('sb_indicator');
+  if(!ind) return;
+  ind.style.display = 'inline-flex';
+  
+  if (typeof supabase !== 'undefined') {
+    ind.style.background = '#0d7e3e'; // Schönes Filial-Grün
+    ind.textContent = '🟢 Live (Supabase)';
+    ind.title = 'Datenbank erfolgreich verbunden!';
+  } else {
+    ind.style.background = '#b45309'; // Orange
+    ind.textContent = '?? Lokal';
+    ind.title = 'Offline-Modus';
+  }
+}
   ind.style.cursor='pointer';
   ind.onclick=function(){nav('settings');};
 }
