@@ -13397,7 +13397,19 @@ function pgMeta(){
         {e:'"Wie lange hält der Akku?"',a:'36 Stunden Standby, 4 Stunden aktive Nutzung. Case gibt 3 Ladungen dazu.'},
       ];
 
-      html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">';
+      w.document.close();
+    w.print();
+  };
+};
+
+// Startet die App und lädt die Filialen beim Seitenaufruf
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof render === 'function') render();
+  if (typeof initApp === 'function') initApp();
+});
+</script>
+</body>
+</html>html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">';
       html+='<div>';
       html+='<div style="font-size:12px;font-weight:700;color:'+kt.col+';margin-bottom:10px;">'+kt.icon+' Kundentyp: '+kt.lbl+'</div>';
       tips.forEach(function(t,i){
