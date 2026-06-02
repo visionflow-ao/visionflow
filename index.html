@@ -13424,3 +13424,29 @@ function pgMeta(){
 // ════════════════════════════════════════════════════════════════
 </script></div>
 </body></html>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://rbptvhtnfepqvlqqjsdu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_6XaNlRVVf8FuEei1o18rpA_ki9bcKv6'; 
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function speichereBeratungInCloud(kundeName, linsenPaket, notizenText) {
+  await supabase.from('beratungen').insert([{ kunde_name: kundeName, linsen_paket: linsenPaket, notizen: notizenText }]);
+}
+
+async function sendeChatNachrichtInCloud(mitarbeiterName, nachrichtText) {
+  await supabase.from('chat_messages').insert([{ sender: mitarbeiterName, message: nachrichtText }]);
+}
+
+supabase.channel('live-beratungen').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beratungen' }, payload => {
+    console.log('Neue Beratung live empfangen:', payload.new);
+    if(typeof renderNeueBeratung === 'function') renderNeueBeratung(payload.new);
+}).subscribe();
+
+supabase.channel('live-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
+    console.log('Neue Nachricht live empfangen:', payload.new);
+    if(typeof renderNeueNachricht === 'function') renderNeueNachricht(payload.new);
+}).subscribe();
+</script>
