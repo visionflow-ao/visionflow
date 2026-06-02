@@ -13494,3 +13494,113 @@ async function sendeChatNachrichtInCloud(mitarbeiterName, nachrichtText) {
   if (error) console.error('Fehler beim Chat-Senden:', error);
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// 1. Verbindung zur Datenbank
+const SUPABASE_URL = 'https://rbptvhtnfepqvlqqjsdu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_6XaNlRVVf8FuEei1o18rpA_ki9bcKv6'; 
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 2. System global auf ONLINE schalten, damit deine alten Funktionen freigeschaltet werden
+if (typeof SB !== 'undefined') {
+  SB.online = true;
+}
+
+function updateSBIndicator() {
+  try {
+    var ind = document.getElementById('sb_indicator');
+    if(ind) {
+      ind.style.display = 'inline-flex';
+      ind.style.background = '#0d7e3e'; // Schönes Filial-Grün
+      ind.textContent = '🟢 Live (Cloud)';
+      ind.title = 'Datenbank erfolgreich verbunden!';
+    }
+  } catch(e) { console.error(e); }
+}
+// Indicator direkt starten
+setTimeout(updateSBIndicator, 1000);
+
+// ==========================================
+// 3. AUTOMATISCHE BRÜCKE ZU DEINEN BUTTONS
+// ==========================================
+
+// Wir klinken uns direkt in deine "saveData"-Funktion ein!
+if (typeof saveData === 'function') {
+  const originalSaveData = saveData;
+  saveData = function() {
+    // 1. Führe dein normales, lokales Speichern aus
+    originalSaveData();
+    
+    // 2. Sende die Daten GLEICHZEITIG live an Supabase
+    try {
+      if (typeof ST !== 'undefined') {
+        // Wir holen die aktuellste Beratung aus deinem Speicher-Objekt (ST)
+        if (ST.beratungen && ST.beratungen.length > 0) {
+          const letzteBeratung = ST.beratungen[ST.beratungen.length - 1];
+          speichereBeratungInCloud(
+            letzteBeratung.kunde_name || 'Unbekannt', 
+            letzteBeratung.linsen_paket || 'Standard', 
+            letzteBeratung.notizen || ''
+          );
+        }
+      }
+    } catch(e) { console.error("Cloud-Übertragung fehlgeschlagen:", e); }
+  };
+}
+
+// Wir klinken und in deine Chat-Sendefunktion ein (falls vorhanden)
+if (typeof sendChatMessage === 'function') {
+  const originalSendChat = sendChatMessage;
+  sendChatMessage = function(name, text) {
+    originalSendChat(name, text);
+    sendeChatNachrichtInCloud(name, text);
+  };
+}
+
+// ==========================================
+// 4. LIVE-EMPFANG (REALTIME SYNCHRONISATION)
+// ==========================================
+
+// Wenn ein anderes Gerät (z.B. die Filialleiterin) eine Beratung speichert
+supabase
+  .channel('live-beratungen')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beratungen' }, payload => {
+      console.log('Neue Beratung aus der Cloud empfangen:', payload.new);
+      try {
+        if (typeof ST !== 'undefined' && ST.beratungen) {
+          // Prüfen, ob wir diese Beratung schon haben, wenn nicht -> hinzufügen
+          const existiert = ST.beratungen.some(b => b.kunde_name === payload.new.kunde_name && b.notizen === payload.new.notizen);
+          if (!existiert) {
+            ST.beratungen.push(payload.new);
+            // Deine App anweisen, den Bildschirm neu zu zeichnen!
+            if(typeof render === 'function') { render(); }
+            if(typeof showConsultations === 'function') { showConsultations(); }
+          }
+        }
+      } catch(e) { console.error("Fehler beim Live-Einfügen:", e); }
+  })
+  .subscribe();
+
+// Wenn jemand im Chat schreibt -> sofort anzeigen
+supabase
+  .channel('live-chat')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
+      try {
+        if(typeof renderChat === 'function') { renderChat(); }
+        else if(typeof render === 'function') { render(); }
+      } catch(e) { console.error(e); }
+  })
+  .subscribe();
+
+// ==========================================
+// 5. CLOUD-FUNKTIONEN
+// ==========================================
+async function speichereBeratungInCloud(kundeName, linsenPaket, notizenText) {
+  await supabase.from('beratungen').insert([{ kunde_name: kundeName, linsen_paket: linsenPaket, notizen: notizenText }]);
+}
+
+async function sendeChatNachrichtInCloud(mitarbeiterName, nachrichtText) {
+  await supabase.from('chat_messages').insert([{ sender: mitarbeiterName, message: nachrichtText }]);
+}
+</script>
