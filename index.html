@@ -1,5 +1,50 @@
-<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="color-scheme" content="light"><title>VisionFlow – Optik Beratungssystem</title>
-<style>
+<!DOCTYPE html><html lang="de"><head><meta 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Sofortige Datenbank-Verbindung
+  const SUPABASE_URL = 'https://rbptvhtnfepqvlqqjsdu.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_6XaNlRVVf8FuEei1o18rpA_ki9bcKv6';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Erzwinge den Online-Status im System
+  window.SB = window.SB || {};
+  window.SB.online = true;
+
+  // Intercept der Speicherfunktion, sobald sie deklariert wird
+  let checkSaveInterval = setInterval(() => {
+    if (typeof saveData === 'function') {
+      clearInterval(checkSaveInterval);
+      const originalSaveData = saveData;
+      saveData = function() {
+        originalSaveData();
+        try {
+          if (typeof ST !== 'undefined' && ST.beratungen && ST.beratungen.length > 0) {
+            const letzte = ST.beratungen[ST.beratungen.length - 1];
+            supabase.from('beratungen').insert([{
+              kunde_name: letzte.kunde_name || 'Unbekannt',
+              linsen_paket: letzte.linsen_paket || 'Standard',
+              notizen: letzte.notizen || ''
+            }]).then(() => console.log("Erfolgreich in der Cloud gespeichert!"));
+          }
+        } catch(e) { console.error("Cloud-Fehler:", e); }
+      };
+    }
+  }, 500);
+
+  // Echtzeit-Empfang aktivieren
+  supabase.channel('live-beratungen').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beratungen' }, payload => {
+    try {
+      if (typeof ST !== 'undefined' && ST.beratungen) {
+        const existiert = ST.beratungen.some(b => b.kunde_name === payload.new.kunde_name && b.notizen === payload.new.notizen);
+        if (!existiert) {
+          ST.beratungen.push(payload.new);
+          if (typeof render === 'function') render();
+          if (typeof showConsultations === 'function') showConsultations();
+        }
+      }
+    } catch(e) { console.error(e); }
+  }).subscribe();
+</script>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
 :root{
   color-scheme:light;
@@ -13423,57 +13468,4 @@ function pgMeta(){
 // MEHRSPRACHIGKEIT – Kunden-Interface
 // ════════════════════════════════════════════════════════════════
 </script></div>
-</body></html>
-</script></div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SUPABASE_URL = 'https://rbptvhtnfepqvlqqjsdu.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_6XaNlRVVf8FuEei1o18rpA_ki9bcKv6'; 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-if (typeof SB !== 'undefined') { SB.online = true; }
-
-function updateSBIndicator() {
-  try {
-    var ind = document.getElementById('sb_indicator');
-    if(ind) {
-      ind.style.display = 'inline-flex';
-      ind.style.background = '#0d7e3e';
-      ind.textContent = '🟢 Live (Cloud)';
-    }
-  } catch(e) { console.error(e); }
-}
-setTimeout(updateSBIndicator, 1000);
-
-if (typeof saveData === 'function') {
-  const originalSaveData = saveData;
-  saveData = function() {
-    originalSaveData();
-    try {
-      if (typeof ST !== 'undefined' && ST.beratungen && ST.beratungen.length > 0) {
-        const letzteBeratung = ST.beratungen[ST.beratungen.length - 1];
-        supabase.from('beratungen').insert([{ 
-          kunde_name: letzteBeratung.kunde_name || 'Unbekannt', 
-          linsen_paket: letzteBeratung.linsen_paket || 'Standard', 
-          notizen: letzteBeratung.notizen || '' 
-        }]).then(() => console.log("In Cloud gespeichert"));
-      }
-    } catch(e) { console.error(e); }
-  };
-}
-
-supabase.channel('live-beratungen').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beratungen' }, payload => {
-    try {
-      if (typeof ST !== 'undefined' && ST.beratungen) {
-        const existiert = ST.beratungen.some(b => b.kunde_name === payload.new.kunde_name && b.notizen === payload.new.notizen);
-        if (!existiert) {
-          ST.beratungen.push(payload.new);
-          if(typeof render === 'function') { render(); }
-          if(typeof showConsultations === 'function') { showConsultations(); }
-        }
-      }
-    } catch(e) { console.error(e); }
-}).subscribe();
-</script>
 </body></html>
